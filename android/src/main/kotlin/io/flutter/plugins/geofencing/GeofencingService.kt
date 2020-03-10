@@ -62,23 +62,25 @@ class GeofencingService : MethodCallHandler, JobIntentService() {
                         Context.MODE_PRIVATE)
                         .getLong(GeofencingPlugin.CALLBACK_DISPATCHER_HANDLE_KEY, 0)
 
-                val callbackInfo = FlutterCallbackInformation.lookupCallbackInformation(callbackHandle)
-                if (callbackInfo == null) {
-                    Log.e(TAG, "Fatal: failed to find callback")
-                    return
+                if (callbackHandle != 0) {
+                    val callbackInfo = FlutterCallbackInformation.lookupCallbackInformation(callbackHandle)
+                    if (callbackInfo == null) {
+                        Log.e(TAG, "Fatal: failed to find callback")
+                        return
+                    }
+                    Log.i(TAG, "Starting GeofencingService...")
+                    sBackgroundFlutterView = FlutterNativeView(context, true)
+
+                    val registry = sBackgroundFlutterView!!.pluginRegistry
+                    sPluginRegistrantCallback.registerWith(registry)
+                    val args = FlutterRunArguments()
+                    args.bundlePath = FlutterMain.findAppBundlePath(context)
+                    args.entrypoint = callbackInfo.callbackName
+                    args.libraryPath = callbackInfo.callbackLibraryPath
+
+                    sBackgroundFlutterView!!.runFromBundle(args)
+                    IsolateHolderService.setBackgroundFlutterView(sBackgroundFlutterView)
                 }
-                Log.i(TAG, "Starting GeofencingService...")
-                sBackgroundFlutterView = FlutterNativeView(context, true)
-
-                val registry = sBackgroundFlutterView!!.pluginRegistry
-                sPluginRegistrantCallback.registerWith(registry)
-                val args = FlutterRunArguments()
-                args.bundlePath = FlutterMain.findAppBundlePath(context)
-                args.entrypoint = callbackInfo.callbackName
-                args.libraryPath = callbackInfo.callbackLibraryPath
-
-                sBackgroundFlutterView!!.runFromBundle(args)
-                IsolateHolderService.setBackgroundFlutterView(sBackgroundFlutterView)
             }
         }
         mBackgroundChannel = MethodChannel(sBackgroundFlutterView,
